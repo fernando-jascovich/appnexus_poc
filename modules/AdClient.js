@@ -21,7 +21,7 @@ class AdClient extends React.Component {
         let dim = Dimensions.get('window');
         h = (Math.random() > 0.5) ? 50 : 100;
         w = (Math.random() > 0.5) ? 300 : 320;
-        let placement = "1281482";
+        let placement = "9243149";
         let url = "http://mobile.adnxs.com/ssmob?id=" + 
             placement + 
             "&size=" + w + "x" + h + 
