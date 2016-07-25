@@ -9,45 +9,55 @@ import {
   AppRegistry,
   StyleSheet,
   Text,
-  View
+  View,
+  TouchableHighlight
 } from 'react-native';
+import AdClient from './modules/AdClient';
 
-class appnexusfer extends Component {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit index.ios.js
-        </Text>
-        <Text style={styles.instructions}>
-          Press Cmd+R to reload,{'\n'}
-          Cmd+D or shake for dev menu
-        </Text>
-      </View>
-    );
-  }
+class appnexus_poc extends Component {
+    handleClick() {
+        this.refs.ad.getAd();
+    }
+    render() {
+        return (
+          <View style={styles.root}>
+            <View style={styles.buttonContainer}>
+                <TouchableHighlight onPress={() => this.handleClick()}
+                    style={styles.button}>
+                    <Text style={{color:"#ffffff"}}>Refresh</Text>
+                </TouchableHighlight>
+            </View>
+            <View style={styles.content}>
+                <AdClient ref={"ad"}/>
+            </View>
+          </View>
+        );
+    }
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
+    root: {
+        backgroundColor: '#666666',
+        flex: 1,
+        alignItems: 'stretch',
+        flexDirection: 'column'
+    },
+    content: {
+        flex: 1,
+        justifyContent: "flex-end",
+        alignItems: 'stretch'
+    },
+    buttonContainer: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    button: {
+        backgroundColor: '#333333',
+        padding: 10,
+        borderRadius: 6,
+        justifyContent: "center"
+    }
 });
 
-AppRegistry.registerComponent('appnexusfer', () => appnexusfer);
+AppRegistry.registerComponent('appnexus_poc', () => appnexus_poc);
