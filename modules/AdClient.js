@@ -12,7 +12,7 @@ class AdClient extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            loading: true,
+            loading: false,
             html: "",
             h: 0,
             w: 0,
@@ -20,7 +20,9 @@ class AdClient extends React.Component {
         };
         this.lastRequest = "";
         this.mounted = false;
-        this.getAd();
+
+        //let placement = "9243149";
+        //let placement = "1281432";
     }
     componentDidMount() {
         this.mounted = true;
@@ -28,7 +30,8 @@ class AdClient extends React.Component {
     componentWillUnmount() {
         this.mounted = false;
     }
-    getAd() {
+    getAd(placement, w, h) {
+        if(!placement) return;
         if(this.mounted) {
             this.setState({
                 html: "",
@@ -37,15 +40,12 @@ class AdClient extends React.Component {
                 loading: true
             });
         }
-        let dim = Dimensions.get('window');
-        h = (Math.random() > 0.5) ? 50 : 100;
-        w = (Math.random() > 0.5) ? 300 : 320;
-        let placement = "9243149";
-        //let placement = "1281432";
         let url = "https://mobile.adnxs.com/ssmob?id=" +
             placement +
-            "&size=" + w + "x" + h +
             "&format=json";
+        if(w && h) {
+            url += "&size=" + w + "x" + h;
+        }
         this.lastRequest = url;
         fetch(url)
             .then((response) => response.json())
@@ -82,11 +82,12 @@ class AdClient extends React.Component {
                     </View>);
       }
       getErrorView() {
+          let msg = (this.lastRequest == "") 
+              ? "Waiting for placement id..."
+              : "Sorry, no ad here:\n" + this.lastRequest;
             return (<View style={styles.adLayoutContainer}>
                         <View style={styles.adLayout}>
-                            <Text>
-                                Sorry, no ad here ({this.lastRequest}).
-                            </Text>
+                            <Text>{msg}</Text>
                         </View>
                     </View>);
       }
