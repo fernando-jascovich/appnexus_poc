@@ -9,88 +9,107 @@ import {
 } from 'react-native';
 
 class AdClient extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            loading: false,
-            html: "",
-            h: 0,
-            w: 0,
-            layoutHeight: new Animated.Value(0)
-        };
-        this.lastRequest = "";
-        this.mounted = false;
-
-        //let placement = "9243149";
-        //let placement = "1281432";
+  constructor(props) {
+    super(props);
+    this.state = {
+      loading: false,
+      html: "",
+      h: 0,
+      w: 0,
+      layoutHeight: new Animated.Value(0),
+      autoRefreshInterval: 0
+    };
+    this.lastRequest = "";
+    this.mounted = false;
+  }
+  componentDidMount() {
+    this.mounted = true;
+  }
+  componentWillUnmount() {
+    this.mounted = false;
+  }
+  getUrlForParams(params) {
+    let url = "https://mobile.adnxs.com/ssmob?id=" +
+              params.placementId +
+              "&format=json";
+    if(params.width && params.height) {
+      url += "&size=" + params.width + "x" + params.height;
     }
-    componentDidMount() {
-        this.mounted = true;
+    if(params.location) {
+      url += "&loc=" + params.location.lat + "," + params.location.lng;
+      url += "&loc_age=0";
     }
-    componentWillUnmount() {
-        this.mounted = false;
+    if(params.gender) url += "&gender=" + params.gender;
+    if(params.age) url += "&age=" + params.age;
+    if(params.segments) {
+      try {
+	let obj = JSON.parse(params.segments);
+	for(var key in obj) {
+	  url += "&" + key + "=" + encodeURIComponent(obj[key]);
+	}
+      } catch(e) { console.log(e); }
     }
-    getAd(placement, w, h) {
-        if(!placement) return;
-        if(this.mounted) {
-            this.setState({
-                html: "",
-                h: 0,
-                w: 0,
-                loading: true
-            });
-        }
-        let url = "https://mobile.adnxs.com/ssmob?id=" +
-            placement +
-            "&format=json";
-        if(w && h) {
-            url += "&size=" + w + "x" + h;
-        }
-        this.lastRequest = url;
-        fetch(url)
-            .then((response) => response.json())
-            .then((responseJson) => {
-                let html = '<!doctype html><head><style>';
-                html += 'body {margin:0;padding:0;border:none;overflow:hidden}';
-                html += 'iframe {width:100%;border:none;overflow:hidden}';
-                html += '</style></head><body>';
-                html += responseJson.ads[0].content;
-                html += "</body></html>";
-                this.setState({
-                    html: html,
-                    loading: false,
-                    h: responseJson.ads[0].height,
-                    w: responseJson.ads[0].width,
-                    layoutHeight: new Animated.Value(0)
-                });
-            })
-            .catch((error) => {
-                console.log(error);
-                this.setState({
-                    html: "",
-                    h: 0,
-                    w: 0,
-                    loading: false
-                });
-            });
-        }
-      getLoadingView() {
-            return (<View style={styles.adLayoutContainer}>
-                        <View style={styles.adLayout}>
-                            <Text>Requesting ad server...</Text>
-                        </View>
-                    </View>);
-      }
-      getErrorView() {
-          let msg = (this.lastRequest == "") 
-              ? "Waiting for placement id..."
-              : "Sorry, no ad here:\n" + this.lastRequest;
-            return (<View style={styles.adLayoutContainer}>
-                        <View style={styles.adLayout}>
-                            <Text>{msg}</Text>
-                        </View>
-                    </View>);
-      }
+    return url;
+  }
+  getAd(params) {
+    if(!params || !params.placementId) return;
+    let refresh = (params.autoRefreshInterval) ? params.autoRefreshInterval : 0;
+    if(this.mounted) {
+      this.setState({
+        html: "",
+        h: 0,
+        w: 0,
+        loading: true
+      });
+    }
+    let url = this.getUrlForParams(params);
+    console.log(url);
+    this.lastRequest = url;
+    fetch(url)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        let html = '<!doctype html><head><style>';
+        html += 'body {margin:0;padding:0;border:none;overflow:hidden}';
+        html += 'iframe {width:100%;border:none;overflow:hidden}';
+        html += '</style></head><body>';
+        html += responseJson.ads[0].content;
+        html += "</body></html>";
+        this.setState({
+          html: html,
+          loading: false,
+          h: responseJson.ads[0].height,
+          w: responseJson.ads[0].width,
+          layoutHeight: new Animated.Value(0),
+	  autoRefreshInterval: refresh
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+        this.setState({
+          html: "",
+          h: 0,
+          w: 0,
+          loading: false
+        });
+      });
+  }
+  getLoadingView() {
+    return (<View style={styles.adLayoutContainer}>
+      <View style={styles.adLayout}>
+      <Text>Requesting ad server...</Text>
+      </View>
+      </View>);
+  }
+  getErrorView() {
+    let msg = (this.lastRequest == "") 
+            ? "Waiting for placement id..."
+            : "Sorry, no ad here:\n" + this.lastRequest;
+    return (<View style={styles.adLayoutContainer}>
+      <View style={styles.adLayout}>
+      <Text>{msg}</Text>
+      </View>
+      </View>);
+  }
       render() {
           if(this.state.loading) {
               return this.getLoadingView();
@@ -98,13 +117,24 @@ class AdClient extends React.Component {
               return this.getErrorView();
           } else {
             Animated.timing(
-              this.state.layoutHeight,
-              {
-                  velocity: 2,
-                  deceleration: 0.5,
-                  toValue: this.state.h
-              }
+	      this.state.layoutHeight,
+	      {
+                velocity: 2,
+                deceleration: 0.5,
+                toValue: this.state.h
+	      }
             ).start();
+
+	    if(this.state.autoRefreshInterval > 0) {
+	      let interval = 0;
+	      interval = setInterval(() => {
+		if(this.state.autoRefreshInterval > 0) {
+		  this.refs.webview.reload();
+		} else {
+		  clearInterval(interval);
+		}
+	      }, this.state.autoRefreshInterval * 1000);
+	    }
             return (
             <View style={styles.adLayoutContainer}>
                 <View style={styles.adLayout}>
@@ -117,7 +147,8 @@ class AdClient extends React.Component {
                     <WebView
                         automaticallyAdjustContentInsets={false}
                         scalesPageToFit={true}
-                        scrollEnabled={false}
+              scrollEnabled={false}
+	      ref={"webview"}
                         source={{html:this.state.html}} />
                     </Animated.View>
                 </View>
